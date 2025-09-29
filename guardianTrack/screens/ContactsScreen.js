@@ -4,7 +4,7 @@ import { View, Text, StyleSheet } from "react-native";
 export default function ContactsScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>📞 Emergency Contacts will be managed here.</Text>
+      <Text style={styles.text}>📞 Emergency Contacts will be managed here!</Text>
     </View>
   );
 }
