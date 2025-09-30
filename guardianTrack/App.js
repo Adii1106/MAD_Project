@@ -5,6 +5,7 @@ import HomeScreen from "./screens/HomeScreen";
 import ContactsScreen from "./screens/ContactsScreen";
 import SettingsScreen from "./screens/SettingsScreen";
 
+
 const Tab = createBottomTabNavigator();
 
 export default function App() {

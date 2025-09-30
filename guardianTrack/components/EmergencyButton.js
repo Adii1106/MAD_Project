@@ -26,7 +26,7 @@ export default function EmergencyButton() {
       if (isAvailable) {
         // Send SMS to trusted contacts (dummy numbers for now)
         await SMS.sendSMSAsync(
-          ["6206420660"], // replace with real contacts later
+          ["7617030028","6206420660" , "7617030028"], // replace with real contacts later
           message
         );
       } else {
