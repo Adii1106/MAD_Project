@@ -12,6 +12,7 @@ export default function HomeScreen() {
       <Text style={styles.title}>GuardianTrack</Text>
       <EmergencyButton onPress={handleEmergencyPress} />
     </View>
+    
   );
 }
 

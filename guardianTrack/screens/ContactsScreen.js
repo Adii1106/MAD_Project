@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, Button, FlatList, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, TextInput, FlatList, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function ContactsScreen() {
   const [name, setName] = useState("");
   const [number, setNumber] = useState("");
   const [contacts, setContacts] = useState([]);
-  const [editingIndex, setEditingIndex] = useState(null); // null means adding new, otherwise editing
+  const [editingIndex, setEditingIndex] = useState(null);
 
   useEffect(() => {
     loadContacts();
@@ -25,19 +25,19 @@ export default function ContactsScreen() {
 
   const saveContact = async () => {
     if (!name.trim() || !number.trim()) {
-      alert("Please enter both name and number.");
+      Alert.alert("Missing Info", "Please enter both name and number.");
       return;
     }
 
     let updatedContacts = [...contacts];
 
     if (editingIndex !== null) {
-      // Update existing contact
       updatedContacts[editingIndex] = { name: name.trim(), number: number.trim() };
       setEditingIndex(null);
+      Alert.alert("Updated", "Contact updated successfully.");
     } else {
-      // Add new contact
       updatedContacts.push({ name: name.trim(), number: number.trim() });
+      Alert.alert("Saved", "Contact saved successfully.");
     }
 
     setContacts(updatedContacts);
@@ -52,14 +52,27 @@ export default function ContactsScreen() {
     setNumber("");
   };
 
-  const deleteContact = async (index) => {
-    const updatedContacts = contacts.filter((_, i) => i !== index);
-    setContacts(updatedContacts);
-    try {
-      await AsyncStorage.setItem("contacts", JSON.stringify(updatedContacts));
-    } catch (error) {
-      console.error("Error deleting contact", error);
-    }
+  const deleteContact = (index) => {
+    Alert.alert(
+      "Delete Contact",
+      "Are you sure you want to delete this contact?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            const updatedContacts = contacts.filter((_, i) => i !== index);
+            setContacts(updatedContacts);
+            try {
+              await AsyncStorage.setItem("contacts", JSON.stringify(updatedContacts));
+            } catch (error) {
+              console.error("Error deleting contact", error);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const editContact = (index) => {
@@ -87,7 +100,11 @@ export default function ContactsScreen() {
         style={styles.input}
       />
 
-      <Button title={editingIndex !== null ? "Update Contact" : "Save Contact"} onPress={saveContact} />
+      <TouchableOpacity style={styles.saveBtn} onPress={saveContact}>
+        <Text style={styles.saveBtnText}>
+          {editingIndex !== null ? "Update Contact" : "Save Contact"}
+        </Text>
+      </TouchableOpacity>
 
       <FlatList
         data={contacts}
@@ -111,24 +128,44 @@ export default function ContactsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20 },
-  title: { fontSize: 20, fontWeight: "bold", marginBottom: 10 },
+  container: { flex: 1, padding: 20, backgroundColor: "#f2f2f2" },
+  title: { fontSize: 22, fontWeight: "bold", marginBottom: 15 },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
-    padding: 10,
+    backgroundColor: "#fff",
+    padding: 12,
     marginBottom: 10,
-    borderRadius: 5,
+    borderRadius: 10,
+  },
+  saveBtn: {
+    backgroundColor: "green",
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 15,
+    alignItems: "center",
+  },
+  saveBtnText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
   },
   contactContainer: {
+    backgroundColor: "#fff",
+    padding: 12,
+    marginVertical: 6,
+    borderRadius: 10,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 5,
   },
   contact: { fontSize: 16 },
   buttons: { flexDirection: "row" },
-  editBtn: { backgroundColor: "orange", padding: 5, marginRight: 5, borderRadius: 5 },
-  deleteBtn: { backgroundColor: "red", padding: 5, borderRadius: 5 },
+  editBtn: { backgroundColor: "orange", padding: 8, marginRight: 5, borderRadius: 8 },
+  deleteBtn: { backgroundColor: "red", padding: 8, borderRadius: 8 },
   btnText: { color: "white", fontWeight: "bold" },
 });

@@ -30,7 +30,6 @@ export default function EmergencyButton() {
     }
 
     try {
-      // Get current location
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
         Alert.alert("Permission denied", "Location permission is required.");
@@ -39,15 +38,11 @@ export default function EmergencyButton() {
 
       let location = await Location.getCurrentPositionAsync({});
       const mapsLink = `https://maps.google.com/?q=${location.coords.latitude},${location.coords.longitude}`;
-
-      // Create message
       const message = `🚨 Emergency Alert! I need help. My location: ${mapsLink}`;
 
-      // Use the first contact (or all contacts)
       const numbers = contacts.map((c) => c.number).join(",");
       const smsUrl = `sms:${numbers}?body=${encodeURIComponent(message)}`;
 
-      // Open SMS app
       Linking.openURL(smsUrl);
     } catch (error) {
       console.error("Error sending alert:", error);
@@ -56,23 +51,30 @@ export default function EmergencyButton() {
 
   return (
     <TouchableOpacity style={styles.button} onPress={sendAlert}>
-      <Text style={styles.text}>🚨 Emergency</Text>
+      <Text style={styles.text}>🚨 EMERGENCY 🚨</Text>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: "red",
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: "#e63946", // brighter red
+    paddingVertical: 25,
+    paddingHorizontal: 50,
+    borderRadius: 50, // more rounded
     alignItems: "center",
     justifyContent: "center",
-    marginVertical: 10,
+    marginVertical: 20,
+    elevation: 6, // Android shadow
+    shadowColor: "#000", // iOS shadow
+    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 6,
   },
   text: {
     color: "white",
     fontWeight: "bold",
-    fontSize: 18,
+    fontSize: 22,
+    letterSpacing: 1,
   },
 });
