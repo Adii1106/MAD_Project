@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, Button, FlatList, StyleSheet } from "react-native";
+import { View, Text, TextInput, Button, FlatList, StyleSheet, TouchableOpacity } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function ContactsScreen() {
   const [name, setName] = useState("");
   const [number, setNumber] = useState("");
   const [contacts, setContacts] = useState([]);
+  const [editingIndex, setEditingIndex] = useState(null); // null means adding new, otherwise editing
 
   useEffect(() => {
     loadContacts();
@@ -28,9 +29,17 @@ export default function ContactsScreen() {
       return;
     }
 
-    const newContact = { name: name.trim(), number: number.trim() };
+    let updatedContacts = [...contacts];
 
-    const updatedContacts = [...contacts, newContact];
+    if (editingIndex !== null) {
+      // Update existing contact
+      updatedContacts[editingIndex] = { name: name.trim(), number: number.trim() };
+      setEditingIndex(null);
+    } else {
+      // Add new contact
+      updatedContacts.push({ name: name.trim(), number: number.trim() });
+    }
+
     setContacts(updatedContacts);
 
     try {
@@ -43,9 +52,25 @@ export default function ContactsScreen() {
     setNumber("");
   };
 
+  const deleteContact = async (index) => {
+    const updatedContacts = contacts.filter((_, i) => i !== index);
+    setContacts(updatedContacts);
+    try {
+      await AsyncStorage.setItem("contacts", JSON.stringify(updatedContacts));
+    } catch (error) {
+      console.error("Error deleting contact", error);
+    }
+  };
+
+  const editContact = (index) => {
+    setName(contacts[index].name);
+    setNumber(contacts[index].number);
+    setEditingIndex(index);
+  };
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Add Emergency Contact</Text>
+      <Text style={styles.title}>Emergency Contacts</Text>
 
       <TextInput
         placeholder="Enter name"
@@ -57,20 +82,28 @@ export default function ContactsScreen() {
       <TextInput
         placeholder="Enter number"
         value={number}
-        onChangeText={(text) => setNumber(text.replace(/[^0-9]/g, ""))} // allow only numbers
+        onChangeText={(text) => setNumber(text.replace(/[^0-9]/g, ""))}
         keyboardType="phone-pad"
         style={styles.input}
       />
 
-      <Button title="Save Contact" onPress={saveContact} />
+      <Button title={editingIndex !== null ? "Update Contact" : "Save Contact"} onPress={saveContact} />
 
       <FlatList
         data={contacts}
         keyExtractor={(item, index) => index.toString()}
-        renderItem={({ item }) => (
-          <Text style={styles.contact}>
-            {item.name} - {item.number}
-          </Text>
+        renderItem={({ item, index }) => (
+          <View style={styles.contactContainer}>
+            <Text style={styles.contact}>{item.name} - {item.number}</Text>
+            <View style={styles.buttons}>
+              <TouchableOpacity onPress={() => editContact(index)} style={styles.editBtn}>
+                <Text style={styles.btnText}>Edit</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => deleteContact(index)} style={styles.deleteBtn}>
+                <Text style={styles.btnText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         )}
       />
     </View>
@@ -87,8 +120,15 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderRadius: 5,
   },
-  contact: {
-    fontSize: 16,
-    padding: 5,
+  contactContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 5,
   },
+  contact: { fontSize: 16 },
+  buttons: { flexDirection: "row" },
+  editBtn: { backgroundColor: "orange", padding: 5, marginRight: 5, borderRadius: 5 },
+  deleteBtn: { backgroundColor: "red", padding: 5, borderRadius: 5 },
+  btnText: { color: "white", fontWeight: "bold" },
 });
