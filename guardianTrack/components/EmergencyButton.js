@@ -6,70 +6,91 @@ import * as Location from "expo-location";
 export default function EmergencyButton() {
   const [contacts, setContacts] = useState([]);
 
-  // Load contacts when button mounts
   useEffect(() => {
     const loadContacts = async () => {
-      try {
-        const savedContacts = await AsyncStorage.getItem("contacts");
-        if (savedContacts) {
-          setContacts(JSON.parse(savedContacts));
-        }
-      } catch (error) {
-        console.error("Error loading contacts:", error);
-      }
+      const savedContacts = await AsyncStorage.getItem("contacts");
+      if (savedContacts) setContacts(JSON.parse(savedContacts));
     };
-
     loadContacts();
   }, []);
 
-  // Handle emergency alert
-  const sendAlert = async () => {
+  const getLocationMessage = async () => {
+    let { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission denied", "Location is required to send alerts.");
+      return null;
+    }
+
+    const location = await Location.getCurrentPositionAsync({});
+    const mapsLink = `https://maps.google.com/?q=${location.coords.latitude},${location.coords.longitude}`;
+
+    return `🚨 Emergency Alert!\nI need help!\nMy location: ${mapsLink}`;
+  };
+
+  // 📩 SMS Alert
+  const sendSMSAlert = async () => {
+    const message = await getLocationMessage();
+    if (!message) return;
+
+    const numbers = contacts.map((c) => c.number).join(",");
+    const smsUrl = `sms:${numbers}?body=${encodeURIComponent(message)}`;
+    Linking.openURL(smsUrl);
+  };
+
+  // 🟢 WhatsApp Alert
+  const sendWhatsAppAlert = async () => {
+    const message = await getLocationMessage();
+    if (!message) return;
+
+    contacts.forEach((c) => {
+      const url = `whatsapp://send?phone=+91${c.number}&text=${encodeURIComponent(message)}`;
+      Linking.canOpenURL(url).then((supported) => {
+        if (!supported) {
+          Alert.alert("WhatsApp not installed");
+        } else {
+          Linking.openURL(url);
+        }
+      });
+    });
+  };
+
+  // 🚨 Choose Alert Type
+  const chooseAlertMethod = () => {
     if (contacts.length === 0) {
-      Alert.alert("No contacts", "Please add emergency contacts first.");
+      Alert.alert("No Contacts", "Please add emergency contacts first.");
       return;
     }
 
-    try {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert("Permission denied", "Location permission is required.");
-        return;
-      }
-
-      let location = await Location.getCurrentPositionAsync({});
-      const mapsLink = `https://maps.google.com/?q=${location.coords.latitude},${location.coords.longitude}`;
-      const message = `🚨 Emergency Alert! I need help. My location: ${mapsLink}`;
-
-      const numbers = contacts.map((c) => c.number).join(",");
-      const smsUrl = `sms:${numbers}?body=${encodeURIComponent(message)}`;
-
-      Linking.openURL(smsUrl);
-    } catch (error) {
-      console.error("Error sending alert:", error);
-    }
+    Alert.alert(
+      "Send Alert Via",
+      "Choose a communication method:",
+      [
+        { text: "SMS", onPress: sendSMSAlert },
+        { text: "WhatsApp", onPress: sendWhatsAppAlert },
+        { text: "Cancel", style: "cancel" },
+      ]
+    );
   };
 
   return (
-    <TouchableOpacity style={styles.button} onPress={sendAlert}>
-      <Text style={styles.text}>🚨 EMERGENCY 🚨</Text>
+    <TouchableOpacity style={styles.button} onPress={chooseAlertMethod}>
+      <Text style={styles.text}>🚨 EMERGENCY</Text>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: "#e63946", // brighter red
+    backgroundColor: "#e63946",
     paddingVertical: 25,
-    paddingHorizontal: 50,
-    borderRadius: 50, // more rounded
-    alignItems: "center",
-    justifyContent: "center",
-    marginVertical: 20,
-    elevation: 6, // Android shadow
-    shadowColor: "#000", // iOS shadow
+    paddingHorizontal: 45,
+    borderRadius: 50,
+    elevation: 6,
+    shadowColor: "#000",
     shadowOpacity: 0.3,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 6,
+    marginVertical: 20,
   },
   text: {
     color: "white",

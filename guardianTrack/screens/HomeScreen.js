@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, Alert } from "react-native";
+import { Alert, StyleSheet, Text, View } from "react-native";
 import EmergencyButton from "../components/EmergencyButton";
 
 export default function HomeScreen() {
@@ -18,7 +18,7 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flex: 1,  
     alignItems: "center",
     justifyContent: "center",
     padding: 20,
