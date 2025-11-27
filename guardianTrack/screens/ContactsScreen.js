@@ -1,123 +1,80 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, FlatList, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import React, { useState, useEffect, useContext } from "react";
+import { View, Text, TextInput, Button, FlatList, StyleSheet, TouchableOpacity } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ThemeContext } from "../context/ThemeContext";
 
 export default function ContactsScreen() {
+  const { darkMode } = useContext(ThemeContext);
   const [name, setName] = useState("");
   const [number, setNumber] = useState("");
   const [contacts, setContacts] = useState([]);
   const [editingIndex, setEditingIndex] = useState(null);
 
   useEffect(() => {
-    loadContacts();
+    (async () => {
+      const saved = await AsyncStorage.getItem("contacts");
+      if (saved) setContacts(JSON.parse(saved));
+    })();
   }, []);
 
-  const loadContacts = async () => {
-    try {
-      const savedContacts = await AsyncStorage.getItem("contacts");
-      if (savedContacts) {
-        setContacts(JSON.parse(savedContacts));
-      }
-    } catch (error) {
-      console.error("Error loading contacts", error);
-    }
-  };
-
   const saveContact = async () => {
-    if (!name.trim() || !number.trim()) {
-      Alert.alert("Missing Info", "Please enter both name and number.");
-      return;
-    }
+    if (!name || !number) return alert("Enter name & number!");
 
-    let updatedContacts = [...contacts];
+    let updated = [...contacts];
+    if (editingIndex !== null) updated[editingIndex] = { name, number };
+    else updated.push({ name, number });
 
-    if (editingIndex !== null) {
-      updatedContacts[editingIndex] = { name: name.trim(), number: number.trim() };
-      setEditingIndex(null);
-      Alert.alert("Updated", "Contact updated successfully.");
-    } else {
-      updatedContacts.push({ name: name.trim(), number: number.trim() });
-      Alert.alert("Saved", "Contact saved successfully.");
-    }
-
-    setContacts(updatedContacts);
-
-    try {
-      await AsyncStorage.setItem("contacts", JSON.stringify(updatedContacts));
-    } catch (error) {
-      console.error("Error saving contacts", error);
-    }
-
+    setContacts(updated);
+    await AsyncStorage.setItem("contacts", JSON.stringify(updated));
     setName("");
     setNumber("");
+    setEditingIndex(null);
   };
 
-  const deleteContact = (index) => {
-    Alert.alert(
-      "Delete Contact",
-      "Are you sure you want to delete this contact?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            const updatedContacts = contacts.filter((_, i) => i !== index);
-            setContacts(updatedContacts);
-            try {
-              await AsyncStorage.setItem("contacts", JSON.stringify(updatedContacts));
-            } catch (error) {
-              console.error("Error deleting contact", error);
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  const editContact = (index) => {
-    setName(contacts[index].name);
-    setNumber(contacts[index].number);
-    setEditingIndex(index);
+  const deleteContact = async (i) => {
+    const updated = contacts.filter((_, idx) => idx !== i);
+    setContacts(updated);
+    await AsyncStorage.setItem("contacts", JSON.stringify(updated));
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Emergency Contacts</Text>
+    <View style={[styles.container, darkMode && styles.darkBg]}>
+      <Text style={[styles.title, darkMode && styles.darkText]}>Emergency Contacts</Text>
 
       <TextInput
         placeholder="Enter name"
+        placeholderTextColor={darkMode ? "#888" : "#555"}
         value={name}
         onChangeText={setName}
-        style={styles.input}
+        style={[styles.input, darkMode && styles.darkInput]}
       />
 
       <TextInput
         placeholder="Enter number"
-        value={number}
-        onChangeText={(text) => setNumber(text.replace(/[^0-9]/g, ""))}
+        placeholderTextColor={darkMode ? "#888" : "#555"}
         keyboardType="phone-pad"
-        style={styles.input}
+        value={number}
+        onChangeText={(t) => setNumber(t.replace(/[^0-9]/g, ""))}
+        style={[styles.input, darkMode && styles.darkInput]}
       />
 
-      <TouchableOpacity style={styles.saveBtn} onPress={saveContact}>
-        <Text style={styles.saveBtnText}>
-          {editingIndex !== null ? "Update Contact" : "Save Contact"}
-        </Text>
-      </TouchableOpacity>
+      <Button title={editingIndex !== null ? "Update" : "Save"} onPress={saveContact} color="#e63946" />
 
       <FlatList
         data={contacts}
-        keyExtractor={(item, index) => index.toString()}
         renderItem={({ item, index }) => (
-          <View style={styles.contactContainer}>
-            <Text style={styles.contact}>{item.name} - {item.number}</Text>
-            <View style={styles.buttons}>
-              <TouchableOpacity onPress={() => editContact(index)} style={styles.editBtn}>
-                <Text style={styles.btnText}>Edit</Text>
+          <View style={[styles.card, darkMode && styles.darkCard]}>
+            <Text style={[styles.contact, darkMode && styles.darkText]}>
+              {item.name} - {item.number}
+            </Text>
+
+            <View style={styles.row}>
+              <TouchableOpacity onPress={() => { setEditingIndex(index); setName(item.name); setNumber(item.number); }}>
+                <Text style={styles.edit}>Edit</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => deleteContact(index)} style={styles.deleteBtn}>
-                <Text style={styles.btnText}>Delete</Text>
+
+              <TouchableOpacity onPress={() => deleteContact(index)}>
+                <Text style={styles.del}>Delete</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -128,44 +85,16 @@ export default function ContactsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#f2f2f2" },
-  title: { fontSize: 22, fontWeight: "bold", marginBottom: 15 },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    backgroundColor: "#fff",
-    padding: 12,
-    marginBottom: 10,
-    borderRadius: 10,
-  },
-  saveBtn: {
-    backgroundColor: "green",
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 15,
-    alignItems: "center",
-  },
-  saveBtnText: {
-    color: "white",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-  contactContainer: {
-    backgroundColor: "#fff",
-    padding: 12,
-    marginVertical: 6,
-    borderRadius: 10,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
+  container: { flex: 1, padding: 20, backgroundColor: "#fff" },
+  darkBg: { backgroundColor: "#000" },
+  darkInput: { backgroundColor: "#111", color: "#fff", borderColor: "#444" },
+  title: { fontSize: 24, fontWeight: "bold", marginBottom: 15, color: "#000" },
+  darkText: { color: "#fff" },
+  input: { borderWidth: 1, borderColor: "#ccc", padding: 10, borderRadius: 8, marginBottom: 10 },
+  card: { backgroundColor: "#fff", padding: 15, borderRadius: 10, marginBottom: 10 },
+  darkCard: { backgroundColor: "#111", borderColor: "#333" },
   contact: { fontSize: 16 },
-  buttons: { flexDirection: "row" },
-  editBtn: { backgroundColor: "orange", padding: 8, marginRight: 5, borderRadius: 8 },
-  deleteBtn: { backgroundColor: "red", padding: 8, borderRadius: 8 },
-  btnText: { color: "white", fontWeight: "bold" },
+  row: { flexDirection: "row", justifyContent: "flex-end" },
+  edit: { marginRight: 15, color: "orange", fontWeight: "bold" },
+  del: { color: "red", fontWeight: "bold" },
 });

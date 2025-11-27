@@ -1,60 +1,55 @@
-import React, { useEffect, useState } from "react";
-import { View, StyleSheet, ActivityIndicator, Text } from "react-native";
+import React, { useEffect, useState, useContext } from "react";
+import { View, Text, ActivityIndicator, StyleSheet } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
+import { ThemeContext } from "../context/ThemeContext";
 
 export default function MapScreen() {
-  const [location, setLocation] = useState(null);
+  const { darkMode } = useContext(ThemeContext);
+  const [loc, setLoc] = useState(null);
 
   useEffect(() => {
     (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        alert("Permission to access location was denied");
-        return;
-      }
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") return alert("Enable location for map use!");
 
-      const loc = await Location.getCurrentPositionAsync({});
-      setLocation(loc.coords);
+      const pos = await Location.getCurrentPositionAsync({});
+      setLoc(pos.coords);
     })();
   }, []);
 
-  if (!location) {
+  if (!loc)
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" color="red" />
-        <Text>Fetching your location...</Text>
+      <View style={[styles.loading, darkMode && styles.darkBg]}>
+        <ActivityIndicator size="large" color="#e63946" />
+        <Text style={[styles.text, darkMode && styles.darkText]}>
+          Fetching location...
+        </Text>
       </View>
     );
-  }
 
   return (
-    <MapView
-      style={styles.map}
-      initialRegion={{
-        latitude: location.latitude,
-        longitude: location.longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      }}
-    >
-      <Marker
-        coordinate={{
-          latitude: location.latitude,
-          longitude: location.longitude,
+    <View style={[styles.container, darkMode && styles.darkBg]}>
+      <MapView
+        style={styles.map}
+        initialRegion={{
+          latitude: loc.latitude,
+          longitude: loc.longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
         }}
-        title="You are here"
-        description="Current location"
-      />
-    </MapView>
+      >
+        <Marker coordinate={loc} title="You are here" />
+      </MapView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: { flex: 1 },
+  darkBg: { backgroundColor: "#000" },
+  loading: { flex: 1, justifyContent: "center", alignItems: "center" },
+  text: { marginTop: 10, color: "#000" },
+  darkText: { color: "#fff" },
   map: { flex: 1 },
-  loading: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
 });
