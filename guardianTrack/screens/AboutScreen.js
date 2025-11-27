@@ -21,8 +21,8 @@ export default function AboutScreen() {
       <Text style={styles.text}>v1.0.0</Text>
 
       <Text style={styles.sectionTitle}>Contact</Text>
-      <TouchableOpacity onPress={() => Linking.openURL("mailto:aditya@example.com")}>
-        <Text style={[styles.text, styles.link]}>aditya@example.com</Text>
+      <TouchableOpacity onPress={() => Linking.openURL("mailto:aditya.mishra@adypu.edu.in")}>
+        <Text style={[styles.text, styles.link]}>aditya.mishra@adypu.edu.in</Text>
       </TouchableOpacity>
 
       <Text style={styles.footer}>

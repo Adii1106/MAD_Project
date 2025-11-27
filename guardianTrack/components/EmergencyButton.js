@@ -1,9 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, {
+  useState,
+  useEffect,
+  forwardRef,
+  useImperativeHandle
+} from "react";
 import { TouchableOpacity, Text, StyleSheet, Alert, Linking } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Location from "expo-location";
 
-export default function EmergencyButton() {
+const EmergencyButton = forwardRef((props, ref) => {
   const [contacts, setContacts] = useState([]);
 
   useEffect(() => {
@@ -17,14 +22,13 @@ export default function EmergencyButton() {
   const getLocationMessage = async () => {
     let { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Permission denied", "Location is required to send alerts.");
+      Alert.alert("Permission Denied", "Location access is required to send alerts.");
       return null;
     }
 
     const location = await Location.getCurrentPositionAsync({});
     const mapsLink = `https://maps.google.com/?q=${location.coords.latitude},${location.coords.longitude}`;
-
-    return `🚨 Emergency Alert!\nI need help!\nMy location: ${mapsLink}`;
+    return `🚨 Emergency Alert!\nI need help.\nMy location: ${mapsLink}`;
   };
 
   // 📩 SMS Alert
@@ -45,16 +49,13 @@ export default function EmergencyButton() {
     contacts.forEach((c) => {
       const url = `whatsapp://send?phone=+91${c.number}&text=${encodeURIComponent(message)}`;
       Linking.canOpenURL(url).then((supported) => {
-        if (!supported) {
-          Alert.alert("WhatsApp not installed");
-        } else {
-          Linking.openURL(url);
-        }
+        if (!supported) Alert.alert("WhatsApp not installed");
+        else Linking.openURL(url);
       });
     });
   };
 
-  // 🚨 Choose Alert Type
+  // 🚨 Choose Alert Method Pop-up
   const chooseAlertMethod = () => {
     if (contacts.length === 0) {
       Alert.alert("No Contacts", "Please add emergency contacts first.");
@@ -67,17 +68,24 @@ export default function EmergencyButton() {
       [
         { text: "SMS", onPress: sendSMSAlert },
         { text: "WhatsApp", onPress: sendWhatsAppAlert },
-        { text: "Cancel", style: "cancel" },
+        { text: "Cancel", style: "cancel" }
       ]
     );
   };
+
+  // 🔁 Expose function to trigger emergency (Used by Shake)
+  useImperativeHandle(ref, () => ({
+    activateEmergency: () => chooseAlertMethod(),
+  }));
 
   return (
     <TouchableOpacity style={styles.button} onPress={chooseAlertMethod}>
       <Text style={styles.text}>🚨 EMERGENCY</Text>
     </TouchableOpacity>
   );
-}
+});
+
+export default EmergencyButton;
 
 const styles = StyleSheet.create({
   button: {

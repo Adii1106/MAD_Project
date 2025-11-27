@@ -3,13 +3,20 @@ import { View, Text, StyleSheet, Alert } from "react-native";
 import EmergencyButton from "../components/EmergencyButton";
 import useShake from "../utils/useShake";
 
-export default function HomeScreen({ navigation }) {
+export default function HomeScreen() {
+  let emergencyRef = React.useRef(null);
+
   const triggerEmergency = () => {
     Alert.alert(
       "Shake Detected!",
-      "Emergency detected automatically! Opening alert options...",
+      "Emergency mode activated automatically!",
+      [
+        {
+          text: "Send Alert",
+          onPress: () => emergencyRef.current.activateEmergency(),
+        }
+      ]
     );
-    navigation.navigate("Home");
   };
 
   useShake(triggerEmergency);
@@ -17,8 +24,9 @@ export default function HomeScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>GuardianTrack</Text>
-      <Text style={styles.subText}>Shake your phone 3 times to trigger SOS</Text>
-      <EmergencyButton />
+      <Text style={styles.subText}>Shake the phone 3 times to trigger SOS</Text>
+      
+      <EmergencyButton ref={emergencyRef} />
     </View>
   );
 }
